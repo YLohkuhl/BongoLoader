@@ -10,8 +10,6 @@ namespace BongoLoader
     {
         public override void OnInitializeMelon()
         {
-            // BongoPreferences.Setup();
-
             ModLoader.Setup();
             ModLoader.Logger.Msg("Loader is fully setup!");
         }

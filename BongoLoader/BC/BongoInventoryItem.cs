@@ -12,7 +12,7 @@ using BongoLoader.Utils;
 
 namespace BongoLoader.BC
 {
-    public class BongoInventoryItem : MonoBehaviour, IPointerEnterHandler, IEventSystemHandler, IPointerExitHandler
+    public class BongoInventoryItem : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     {
         public BongoItem CatItem { get; private set; }
 

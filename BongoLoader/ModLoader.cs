@@ -103,6 +103,12 @@ namespace BongoLoader
                 return;
             }
 
+            if (HasLoadedMods)
+            {
+                Logger.Error("BongoLoader has already been called to load mods. You cannot load mods more than once.");
+                return;
+            }
+
             Logger.WriteSpacer();
             Logger.Msg("Loading Bongos..");
 
