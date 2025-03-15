@@ -9,6 +9,9 @@ using System.Threading.Tasks;
 
 namespace BongoLoader.Utils
 {
+    /// <summary>
+    /// Searches through Bongo directories for mods and their items.
+    /// </summary>
     public static class BongoSearcher
     {
         public const string BONGO_FILENAME = "bongo.json";

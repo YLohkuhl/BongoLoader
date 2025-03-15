@@ -20,6 +20,6 @@ namespace BongoLoader.Utils
         public static string ModsDirectory { get; } = Path.Combine(LoaderDirectory, "Mods");
         public static string PrefsDirectory { get; } = Path.Combine(PersistentDirectory, "Prefs");
 
-        public static string FavoritePrefsDirectory { get; } = Path.Combine(PrefsDirectory, "Favorites");
+        public static string FavoritePrefsDirectory { get; } = Path.Combine(PrefsDirectory, "Favorite");
     }
 }

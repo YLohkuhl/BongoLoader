@@ -81,21 +81,21 @@ namespace BongoLoader.Patches
 
                 catItem.IsEquipped = true;
                 catItem.OnItemUpdated?.Invoke();
-                
+                equipped.Add(catItem);
+
                 ///
 
                 // Unequip modded AND native items
                 foreach (var item in equipped)
                 {
-                    if (item.Slot == catItem.Slot)
+                    if (item.Slot == catItem.Slot && !item.Id.Equals(catItem.Id))
                     {
                         item.IsEquipped = false;
                         item.OnItemUpdated?.Invoke();
                     }
                 }
 
-                equipped.RemoveAll(x => x.Slot == catItem.Slot);
-                equipped.Add(catItem);
+                equipped.RemoveAll(x => x.Slot == catItem.Slot && !x.Id.Equals(catItem.Id));
 
                 foreach (var item in cosmetics._equippedItems)
                 {
