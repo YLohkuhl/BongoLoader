@@ -12,9 +12,9 @@ using BongoLoader.Utils;
 
 namespace BongoLoader.BC
 {
-    internal class CatInventoryItem : MonoBehaviour, IPointerEnterHandler, IEventSystemHandler, IPointerExitHandler
+    public class BongoInventoryItem : MonoBehaviour, IPointerEnterHandler, IEventSystemHandler, IPointerExitHandler
     {
-        public CatItem CatItem { get; private set; }
+        public BongoItem CatItem { get; private set; }
 
         protected CatCosmetics _catCosmetics;
         protected CatInventory _catInventory;
@@ -35,7 +35,7 @@ namespace BongoLoader.BC
         protected Color _unequippedColor;
 
         // stripped games suck btw (why must i get child so much ughh)
-        public void Setup(CatItem catItem, InventoryItem inventoryItem)
+        public void Setup(BongoItem catItem, InventoryItem inventoryItem)
         {
             GetComponent<Button>().onClick.AddListener(OnClick);
 
@@ -114,7 +114,7 @@ namespace BongoLoader.BC
             _unequippedColor = inventoryItem._unequippedColor;
         }
 
-        public void SetItem(CatItem catItem)
+        public void SetItem(BongoItem catItem)
         {
             if (_catCosmetics.IsNull())
             {
@@ -124,8 +124,11 @@ namespace BongoLoader.BC
             }
 
             CatItem = catItem;
+            CatItem.OnItemUpdated = (Action)Delegate.Combine(CatItem.OnItemUpdated, new Action(UpdateItem));
             UpdateItem();
         }
+
+        ///
 
         public void UpdateItem()
         {
@@ -141,6 +144,20 @@ namespace BongoLoader.BC
             _favoriteHover.enabled = false;
         }
 
+        public void OnClick()
+        {
+            if (_itemExchange.IsVisible())
+                return;
+
+            BongoCosmetics.EquipOrUnequipItem(_catCosmetics, CatItem, true, true);
+            _newIndicator.gameObject.SetActive(false);
+
+            Shop.Instance.HideTimer();
+
+            if (ModLoader.OnceEquipped.Add(CatItem.Id))
+                BongoPrefs.Set(BongoPrefs.ONCE_EQUIPPED_KEY, string.Join(BongoPrefs.STR_SEPARATOR, ModLoader.OnceEquipped));
+        }
+
         public void ToggleFavorite()
         {
             if (_itemExchange.IsVisible())
@@ -152,22 +169,19 @@ namespace BongoLoader.BC
             _catInventory.SortItems();
         }
 
-        public void OnClick()
+        ///
+
+        public void OnDestroy()
         {
-            BongoCosmetics.EquipOrUnequipItem(_catCosmetics, CatItem, true, true);
-            _newIndicator.gameObject.SetActive(false);
-
-            Shop.Instance.HideTimer();
-
-            if (ModLoader.OnceEquipped.Add(CatItem.Id))
-                BongoPrefs.Set(BongoPrefs.ONCE_EQUIPPED_KEY, string.Join(BongoPrefs.STR_SEPARATOR, ModLoader.OnceEquipped));
+            if (CatItem.IsNull())
+                return;
+            CatItem.OnItemUpdated = (Action)Delegate.Remove(CatItem.OnItemUpdated, new Action(UpdateItem));
         }
 
         public void OnPointerEnter(PointerEventData eventData)
         {
             if (_itemExchange.IsVisible() || _favoriteImage.enabled)
                 return;
-
             _favoriteHover.enabled = true;
         }
 

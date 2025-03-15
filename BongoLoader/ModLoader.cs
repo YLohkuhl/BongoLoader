@@ -6,29 +6,36 @@ using MelonLoader;
 using MelonLoader.Logging;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace BongoLoader
 {
     public static class ModLoader
     {
-        internal static bool _isSetup;
-
-        internal static HashSet<string> _onceEquipped = new HashSet<string>();
-        internal static List<BongoMod> _bongos = new List<BongoMod>();
-        internal static List<CatItem> _items = new List<CatItem>();
+        public static bool IsSetup { get; private set; }
+        public static bool HasLoadedMods { get; private set; }
 
         public static MelonLogger.Instance Logger { get; private set; }
-
         public static HashSet<string> OnceEquipped => _onceEquipped;
+
         public static List<BongoMod> Bongos => _bongos;
-        public static List<CatItem> Items => _items;
+        public static List<BongoItem> Items => _items;
+
+        ///
+
+        internal static HashSet<string> _onceEquipped = new HashSet<string>();
+
+        internal static List<BongoMod> _bongos = new List<BongoMod>();
+        internal static List<BongoItem> _items = new List<BongoItem>();
+
+        ///
 
         /// <summary>
         /// Calls the necessary methods to setup BongoLoader.
         /// </summary>
         public static void Setup()
         {
-            if (_isSetup)
+            if (IsSetup)
             {
                 Logger.Msg("BongoLoader has already been called to setup. You cannot call setup more than once.");
                 return;
@@ -37,22 +44,52 @@ namespace BongoLoader
             Logger = new MelonLogger.Instance("BongoLoader", ColorARGB.Salmon);
             SetupEnvironment();
 
-            ///
+            IsSetup = true;
+        }
+
+        /// <summary>
+        /// Calls the necessary methods to setup BongoLoader after initial setup.
+        /// </summary>
+        public static void PostSetup()
+        {
+            if (!IsSetup)
+            {
+                Logger.Error("BongoLoader has not been setup yet. Post setup cannot be called without setup.");
+                return;
+            }
+
+            if (!HasLoadedMods)
+            {
+                Logger.Error("BongoLoader has not loaded any mods yet. Post setup cannot be called without loading mods.");
+                return;
+            }
 
             if (BongoPrefs.Has(BongoPrefs.ONCE_EQUIPPED_KEY))
             {
                 string text = BongoPrefs.GetString(BongoPrefs.ONCE_EQUIPPED_KEY);
+
                 if (text.IsValid())
                 {
-                    foreach (string item in text.Split(BongoPrefs.CHAR_SEPARATOR))
+                    List<string> split = text.Split(BongoPrefs.CHAR_SEPARATOR).ToList();
+                    List<string> remove = new List<string>();
+
+                    foreach (string item in split)
                     {
-                        if (item.IsValid())
+                        if (!item.IsValid())
+                            continue;
+
+                        if (!_items.Any(x => x.Id.Equals(item)))
+                            remove.Add(item);
+                        else
                             OnceEquipped.Add(item);
                     }
+
+                    foreach (string item in remove)
+                        split.Remove(item);
+
+                    BongoPrefs.Set(BongoPrefs.ONCE_EQUIPPED_KEY, string.Join(BongoPrefs.STR_SEPARATOR, split));
                 }
             }
-
-            _isSetup = true;
         }
 
         /// <summary>
@@ -60,9 +97,9 @@ namespace BongoLoader
         /// </summary>
         internal static void LoadMods()
         {
-            if (!_isSetup)
+            if (!IsSetup)
             {
-                Logger.Error("BongoLoader has not been setup yet. Mods cannot be loaded without setup.");
+                Logger.Error("BongoLoader has not been setup yet. Loading mods cannot be called without setup.");
                 return;
             }
 
@@ -102,6 +139,8 @@ namespace BongoLoader
 
             Logger.Msg(string.Format("{0} {1} loaded.", count, count > 1 ? "Bongos" : "Bongo"));
             Logger.WriteSpacer();
+
+            HasLoadedMods = true;
         }
 
         /// <summary>
@@ -127,9 +166,9 @@ namespace BongoLoader
                     Directory.CreateDirectory(dir);
 
                     if (Directory.Exists(dir))
-                        Logger.Msg($"Successfully created directory: {dir}");
+                        Logger.Msg($"Successfully created Bongo directory: {dir}");
                     else
-                        Logger.Error($"Failed to create directory: {dir}");
+                        Logger.Error($"Failed to create Bongo directory: {dir}");
                 }
             }
         }

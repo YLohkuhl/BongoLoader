@@ -4,22 +4,24 @@ using BongoLoader.BC;
 using BongoLoader.Utils;
 using HarmonyLib;
 using MelonLoader;
+using MelonLoader.TinyJSON;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
-using static MelonLoader.MelonLogger;
 
 namespace BongoLoader.Patches
 {
     [HarmonyPatch(typeof(CatInventory))]
-    internal static class CatInventoryPatch
+    public static class BongoInventory
     {
-        internal static List<CatItem> _items = new List<CatItem>();
-        internal static bool _isInitialized;
+        public static bool IsInitialized { get; private set; }
+
+        public static List<BongoItem> items = new List<BongoItem>();
+
+        public static GameObject modsSeparator;
+        public static Transform modsRoot;
 
         ///
 
@@ -34,49 +36,88 @@ namespace BongoLoader.Patches
 
         private static IEnumerator Start_Coroutine(CatInventory __instance)
         {
-            yield return new WaitUntil(() => __instance.IsInitialized);
+            yield return new WaitUntil(() => __instance.IsInitialized && __instance._hatsRoot.GetComponentInChildren<InventoryItem>());
 
-            InventoryItem inventoryItem = __instance._hatsRoot.GetComponentInChildren<InventoryItem>();
-
-            ///
-
-            foreach (var catItem in ModLoader.Items)
+            if (!modsRoot)
             {
-                if (_items.Any(x => x.Id.Equals(catItem.Id)))
-                    continue;
+                modsSeparator = UnityEngine.Object.Instantiate(__instance._seperator, __instance._seperator.transform.parent);
+                modsSeparator.name = "Mods Separator";
 
-                GameObject gameObject = UnityEngine.Object.Instantiate(__instance._inventoryItemPrefab, 
-                    catItem.Slot == CatItem.ItemSlot.Hat ? __instance._hatsRoot : __instance._skinsRoot);
-
-                UnityEngine.Object.Destroy(gameObject.GetComponent<InventoryItem>());
+                modsSeparator.transform.SetAsFirstSibling();
+                modsSeparator.SetActive(false);
 
                 ///
 
-                CatInventoryItem catInventoryItem = gameObject.AddComponent<CatInventoryItem>();
-                catInventoryItem.Setup(catItem, inventoryItem);
+                modsRoot = UnityEngine.Object.Instantiate(__instance._hatsRoot.gameObject, __instance._hatsRoot.parent).transform;
+                modsRoot.name = "Mods";
 
-                _items.Add(catItem);
+                foreach (Transform transform in modsRoot.transform)
+                    UnityEngine.Object.Destroy(transform.gameObject);
+
+                modsRoot.SetAsFirstSibling();
             }
-
-            _isInitialized = true;
 
             ///
 
-            __instance._catCosmetics.Validate();
-            SortItems(__instance);
+            InventoryItem inventoryItem = __instance._hatsRoot.GetComponentInChildren<InventoryItem>();
+
+            foreach (var catItem in ModLoader.Items)
+            {
+                if (items.Any(x => x.Id.Equals(catItem.Id)))
+                    continue;
+
+                Transform parent = BongoPreferences.DoSeparateModdedItems ? modsRoot.transform : (catItem.Slot == BongoItem.ItemSlot.Hat ? __instance._hatsRoot : __instance._skinsRoot);
+                
+                GameObject gameObject = UnityEngine.Object.Instantiate(__instance._inventoryItemPrefab, parent);
+                UnityEngine.Object.Destroy(gameObject.GetComponent<InventoryItem>());
+
+                BongoInventoryItem catInventoryItem = gameObject.AddComponent<BongoInventoryItem>();
+                catInventoryItem.Setup(catItem, inventoryItem);
+
+                items.Add(catItem);
+            }
+
+            ///
+
+            IsInitialized = true;
         }
 
+        // call the original method to use the modded methods
         [HarmonyPrefix]
         [HarmonyPatch(nameof(CatInventory.SortItems))]
         private static bool SortItems(CatInventory __instance)
         {
-            MelonCoroutines.Start(SortItems_Coroutine(__instance));
+            if (BongoPreferences.DoSeparateModdedItems)
+            {
+                MelonCoroutines.Start(SortBongoItems());
+                return true;
+            }
+
+            MelonCoroutines.Start(SortAllItems(__instance));
             return false;
         }
 
-        private static IEnumerator SortItems_Coroutine(CatInventory __instance)
+        private static IEnumerator SortBongoItems()
         {
-            yield return new WaitUntil(() => _isInitialized);
+            yield return new WaitUntil(() => IsInitialized);
+
+            BongoInventoryItem[] mods = modsRoot.GetComponentsInChildren<BongoInventoryItem>()
+                .OrderByDescending(x => x.CatItem.IsFavorite)
+                .ThenByDescending(x => x.CatItem.Quality)
+                .ToArray();
+
+            foreach (BongoInventoryItem item in mods)
+                item.transform.SetAsLastSibling();
+
+            if (!modsSeparator.activeSelf)
+                modsSeparator.SetActive(true);
+
+            ModLoader.Logger.Msg("sorted");
+        }
+
+        private static IEnumerator SortAllItems(CatInventory __instance)
+        {
+            yield return new WaitUntil(() => IsInitialized);
 
             Component[] hats = __instance._hatsRoot.GetComponentsInChildren<Component>()
                 .OrderByDescending(x =>
@@ -84,7 +125,7 @@ namespace BongoLoader.Patches
                     if (x is InventoryItem native)
                         return native.SteamItem.IsFavorite;
 
-                    if (x is CatInventoryItem mod)
+                    if (x is BongoInventoryItem mod)
                         return mod.CatItem.IsFavorite;
 
                     return false;
@@ -94,7 +135,7 @@ namespace BongoLoader.Patches
                     if (x is InventoryItem native)
                         return native.SteamItem.QualityCategory;
 
-                    if (x is CatInventoryItem mod)
+                    if (x is BongoInventoryItem mod)
                         return mod.CatItem.Quality;
 
                     return QualityCategory.Common;
@@ -107,7 +148,7 @@ namespace BongoLoader.Patches
                     if (x is InventoryItem native)
                         return native.SteamItem.IsFavorite;
 
-                    if (x is CatInventoryItem bongo)
+                    if (x is BongoInventoryItem bongo)
                         return bongo.CatItem.IsFavorite;
 
                     return false;
@@ -117,7 +158,7 @@ namespace BongoLoader.Patches
                     if (x is InventoryItem native)
                         return native.SteamItem.QualityCategory;
 
-                    if (x is CatInventoryItem bongo)
+                    if (x is BongoInventoryItem bongo)
                         return bongo.CatItem.Quality;
 
                     return QualityCategory.Common;
@@ -128,13 +169,13 @@ namespace BongoLoader.Patches
 
             foreach (Component hat in hats)
             {
-                if (hat is InventoryItem native || hat is CatInventoryItem bongo)
+                if (hat is InventoryItem native || hat is BongoInventoryItem bongo)
                     hat.transform.SetAsLastSibling();
             }
 
             foreach (Component skin in skins)
             {
-                if (skin is InventoryItem native || skin is CatInventoryItem bongo)
+                if (skin is InventoryItem native || skin is BongoInventoryItem bongo)
                     skin.transform.SetAsLastSibling();
             }
 

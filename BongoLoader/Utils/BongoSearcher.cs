@@ -45,14 +45,17 @@ namespace BongoLoader.Utils
                         info.id = info.id.StripSeparators();
                         info.title = info.title.ToTitleCase();
 
-                        if (!info.id.ValidateAndLog("Bongo Identifier", file.FullName))
-                            continue;
-                        if (!info.version.ValidateAndLog("Bongo Version", file.FullName))
-                            continue;
-                        if (!info.title.ValidateAndLog("Bongo Title", file.FullName))
-                            continue;
-                        if (!info.author.ValidateAndLog("Bongo Author", file.FullName))
-                            continue;
+                        { // log all pwease :p
+                            bool skip = false;
+
+                            if (!info.id.ValidateAndLog("Bongo Identifier", file.FullName)) skip = true;
+                            if (!info.version.ValidateAndLog("Bongo Version", file.FullName)) skip = true;
+                            if (!info.title.ValidateAndLog("Bongo Title", file.FullName)) skip = true;
+                            if (!info.author.ValidateAndLog("Bongo Author", file.FullName)) skip = true;
+
+                            if (skip)
+                                continue;
+                        }
 
                         info.path = file.Directory.FullName;
                         bongos.Add(info);
@@ -72,7 +75,7 @@ namespace BongoLoader.Utils
         /// </summary>
         /// <param name="mod">The mod to search items in.</param>
         /// <returns><see cref="ItemInfo"/>[]</returns>
-        public static CatItem.ItemInfo[] GetItems(BongoMod mod)
+        public static BongoItem.ItemInfo[] GetItems(BongoMod mod)
         {
             if (mod.IsNull())
                 return null;
@@ -83,7 +86,7 @@ namespace BongoLoader.Utils
                 new DirectoryInfo(Path.Combine(mod.BongoPath, "skins"))
             };
 
-            List<CatItem.ItemInfo> items = new List<CatItem.ItemInfo>();
+            List<BongoItem.ItemInfo> items = new List<BongoItem.ItemInfo>();
 
             foreach (var dir in modDirs)
             {
@@ -101,7 +104,7 @@ namespace BongoLoader.Utils
 
                         try
                         {
-                            CatItem.ItemInfo info = JsonConvert.DeserializeObject<CatItem.ItemInfo>(text);
+                            BongoItem.ItemInfo info = JsonConvert.DeserializeObject<BongoItem.ItemInfo>(text);
                             info.name = info.name.ToTitleCase();
 
                             if (!info.name.ValidateAndLog("Item Name", file.FullName))
@@ -112,15 +115,15 @@ namespace BongoLoader.Utils
                             switch (location)
                             {
                                 case string loc when loc.StartsWith("hats"):
-                                    info.slot = CatItem.ItemSlot.Hat;
+                                    info.slot = BongoItem.ItemSlot.Hat;
                                     break;
 
                                 case string loc when loc.StartsWith("skins"):
-                                    info.slot = CatItem.ItemSlot.Skin;
+                                    info.slot = BongoItem.ItemSlot.Skin;
                                     break;
 
                                 default:
-                                    info.slot = CatItem.ItemSlot.Hat;
+                                    info.slot = BongoItem.ItemSlot.Hat;
                                     break;
                             }
 

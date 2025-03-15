@@ -13,19 +13,19 @@ namespace BongoLoader.Patches
     [HarmonyPatch(typeof(CatCosmetics), nameof(CatCosmetics.EquipItem))]
     internal static class CatCosmeticsEquipItemPatch
     {
-        public static void Prefix(CatCosmetics __instance, SteamItem steamItem)
+        private static void Prefix(CatCosmetics __instance, SteamItem steamItem)
         {
             if (BongoCosmetics.equipped.Count > 0)
             {
                 string capital = steamItem.ItemSlot.ToTitleCase();
 
-                if (!Enum.TryParse(capital, out CatItem.ItemSlot slot))
+                if (!Enum.TryParse(capital, out BongoItem.ItemSlot slot))
                 {
-                    ModLoader.Logger.Error($"Failed to parse '{capital}' to 'CatItem.ItemSlot' enum.");
+                    ModLoader.Logger.Error($"Failed to parse '{capital}' to '{slot.GetType().Name}' enum.");
                     return;
                 }
 
-                CatItem item = BongoCosmetics.equipped.Find(x => x.IsEquipped && x.Slot == slot);
+                BongoItem item = BongoCosmetics.equipped.Find(x => x.IsEquipped && x.Slot == slot);
 
                 if (item.IsNotNull())
                     BongoCosmetics.EquipOrUnequipItem(__instance, item, true, true);

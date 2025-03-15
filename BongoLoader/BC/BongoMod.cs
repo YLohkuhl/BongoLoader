@@ -31,7 +31,7 @@ namespace BongoLoader.BC
         public BongoMod(BongoInfo info)
         {
             Info = info;
-            CatItems = new CatItem[] { };
+            CatItems = new BongoItem[] { };
         }
 
         public string BongoPath => Info.path;
@@ -45,20 +45,20 @@ namespace BongoLoader.BC
         public string Author => Info.author;
         public string Description => Info.description;
 
-        public CatItem[] CatItems; 
+        public BongoItem[] CatItems; 
 
         ///
 
         public void Load()
         {
-            CatItem.ItemInfo[] items = BongoSearcher.GetItems(this);
+            BongoItem.ItemInfo[] items = BongoSearcher.GetItems(this);
 
             if (items.IsNull())
                 return;
 
             foreach (var info in items)
             {
-                CatItem item = ScriptableObject.CreateInstance<CatItem>();
+                BongoItem item = ScriptableObject.CreateInstance<BongoItem>();
                 item.name = info.name;
 
                 item.Init(this, info.slot, null, null, info);

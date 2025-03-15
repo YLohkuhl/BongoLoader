@@ -14,7 +14,7 @@ namespace BongoLoader.BC
     /// <summary>
     /// A modded item for Bongo Cat.
     /// </summary>
-    public class CatItem : ScriptableObject
+    public class BongoItem : ScriptableObject
     {
         [Serializable]
         public struct ItemInfo
@@ -52,7 +52,7 @@ namespace BongoLoader.BC
         public bool IsAnimated => Info.animated;
         public bool IsFavorite => BongoPrefs.HasFavorite(FavoriteKey);
 
-        public Action OnItemUpdated { get; }
+        public Action OnItemUpdated { get; set; }
 
         ///
 

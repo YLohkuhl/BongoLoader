@@ -16,7 +16,7 @@ namespace BongoLoader.Patches
     [HarmonyPatch(typeof(CatCosmetics), nameof(CatCosmetics.Start))]
     public static class BongoCosmetics
     {
-        public static List<CatItem> equipped = new List<CatItem>();
+        public static List<BongoItem> equipped = new List<BongoItem>();
 
         private static void Postfix(CatCosmetics __instance, ref IEnumerator __result) => MelonCoroutines.Start(Start_Coroutine(__instance, __result));
 
@@ -42,7 +42,7 @@ namespace BongoLoader.Patches
             }
         }
 
-        public static void EquipOrUnequipItem(CatCosmetics cosmetics, CatItem catItem, bool playAnimation = true, bool unequipIfSameItemIsEquipped = false)
+        public static void EquipOrUnequipItem(CatCosmetics cosmetics, BongoItem catItem, bool playAnimation = true, bool unequipIfSameItemIsEquipped = false)
         {
             if (catItem.IsNull())
             {
@@ -50,13 +50,13 @@ namespace BongoLoader.Patches
                 return;
             }
 
-            CatItem.ItemSlot itemSlot = catItem.Slot;
+            BongoItem.ItemSlot itemSlot = catItem.Slot;
 
             if (!equipped.Any(x => x.Id.Equals(catItem.Id)) || !unequipIfSameItemIsEquipped)
             {
                 switch (itemSlot)
                 {
-                    case CatItem.ItemSlot.Hat:
+                    case BongoItem.ItemSlot.Hat:
                         {
                             cosmetics._hatImage.sprite = catItem.FullImage;
                             cosmetics._hatImage.enabled = true;
@@ -74,7 +74,7 @@ namespace BongoLoader.Patches
                             break;
                         }
 
-                    case CatItem.ItemSlot.Skin:
+                    case BongoItem.ItemSlot.Skin:
                         cosmetics._cat.SetSkin(catItem.ItemName);
                         break;
                 }
@@ -111,9 +111,6 @@ namespace BongoLoader.Patches
                 ///
 
                 BongoPrefs.Set(BongoPrefs.EQUIPPED_KEY, string.Join(BongoPrefs.STR_SEPARATOR, equipped.Select(x => x.Id).ToArray()));
-
-                ModLoader.Logger.WriteSpacer();
-                ModLoader.Logger.Msg($"Equipped ({catItem.ItemName})");
                 return;
             }
 
@@ -122,21 +119,18 @@ namespace BongoLoader.Patches
 
             switch (catItem.Slot)
             {
-                case CatItem.ItemSlot.Hat:
+                case BongoItem.ItemSlot.Hat:
                     cosmetics._hatImage.sprite = null;
                     cosmetics._hatImage.enabled = cosmetics._hatImage.sprite.IsNotNull();
                     break;
 
-                case CatItem.ItemSlot.Skin:
+                case BongoItem.ItemSlot.Skin:
                     cosmetics._cat.SetSkin(null);
                     break;
             }
 
             catItem.IsEquipped = false;
             catItem.OnItemUpdated?.Invoke();
-
-            ModLoader.Logger.WriteSpacer();
-            ModLoader.Logger.Msg($"Unequipped ({catItem.ItemName})");
         }
     }
 }
