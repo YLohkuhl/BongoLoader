@@ -1,4 +1,5 @@
 ﻿using BongoCat;
+using BongoLoader.BC;
 using HarmonyLib;
 using System;
 using System.Collections.Generic;
@@ -12,34 +13,33 @@ namespace BongoLoader.Patches
     [HarmonyPatch(typeof(CatCosmetics))]
     internal static class CatCosmeticsValidatePatch
     {
-        //[HarmonyPrefix]
-        //[HarmonyPatch(nameof(CatCosmetics.Validate))]
-        //private static void Validate(CatCosmetics __instance)
-        //{
-        //    if (!PlayerPrefs.HasKey("EQUIPPED_ITEMS"))
-        //    {
-        //        return;
-        //    }
-        //    string s = PlayerPrefs.GetString("EQUIPPED_ITEMS");
-        //    if (string.IsNullOrEmpty(s))
-        //    {
-        //        return;
-        //    }
-        //    List<int> ids = Enumerable.ToList<int>(Enumerable.Select<string, int>(s.Split(',', StringSplitOptions.None), new Func<string, int>(int.Parse)));
-        //    List<SteamItem> list = Enumerable.ToList<SteamItem>(Enumerable.Where<SteamItem>(this._catInventory.Items, (SteamItem i) => ids.Contains(i.SteamItemDefId)));
-        //    if (Enumerable.Count<SteamItem>(list, (SteamItem i) => i.ItemSlot == "hat") == 0)
-        //    {
-        //        this._hatImage.sprite = null;
-        //        this._hatImage.enabled = false;
-        //    }
-        //    if (Enumerable.Count<SteamItem>(list, (SteamItem i) => i.ItemSlot == "skin") == 0)
-        //    {
-        //        this._cat.SetSkin(null);
-        //    }
-        //    foreach (SteamItem item in list)
-        //    {
-        //        this.EquipItem(item, false, false);
-        //    }
-        //}
+        [HarmonyPrefix]
+        [HarmonyPatch(nameof(CatCosmetics.Validate))]
+        private static bool Validate(CatCosmetics __instance)
+        {
+            if (!BongoPrefs.Has(BongoPrefs.EQUIPPED_KEY))
+                return true;
+
+            string text = BongoPrefs.GetString(BongoPrefs.EQUIPPED_KEY);
+
+            if (text.IsNotValid())
+                return true;
+
+            string[] equipped = text.Split(BongoPrefs.CHAR_SEPARATOR);
+            BongoItem[] items = BongoInventory.items.Where(x => equipped.Contains(x.Id)).ToArray();
+            
+            if (items.Count(x => x.Slot == BongoItem.ItemSlot.Hat) < 1)
+            {
+                __instance._hatImage.sprite = null;
+                __instance._hatImage.enabled = false;
+            }
+            if (items.Count(x => x.Slot == BongoItem.ItemSlot.Skin) < 1)
+                __instance._cat.SetSkin(null);
+
+            foreach (BongoItem item in items)
+                BongoCosmetics.EquipOrUnequipItem(__instance, item, false);
+
+            return false;
+        }
     }
 }

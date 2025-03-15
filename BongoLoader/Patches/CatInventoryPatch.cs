@@ -66,7 +66,7 @@ namespace BongoLoader.Patches
                 if (items.Any(x => x.Id.Equals(catItem.Id)))
                     continue;
 
-                Transform parent = BongoPreferences.DoSeparateModdedItems ? modsRoot.transform : (catItem.Slot == BongoItem.ItemSlot.Hat ? __instance._hatsRoot : __instance._skinsRoot);
+                Transform parent = BongoOptions.ModSeparater ? modsRoot.transform : (catItem.Slot == BongoItem.ItemSlot.Hat ? __instance._hatsRoot : __instance._skinsRoot);
                 
                 GameObject gameObject = UnityEngine.Object.Instantiate(__instance._inventoryItemPrefab, parent);
                 UnityEngine.Object.Destroy(gameObject.GetComponent<InventoryItem>());
@@ -87,7 +87,7 @@ namespace BongoLoader.Patches
         [HarmonyPatch(nameof(CatInventory.SortItems))]
         private static bool SortItems(CatInventory __instance)
         {
-            if (BongoPreferences.DoSeparateModdedItems)
+            if (BongoOptions.ModSeparater)
             {
                 MelonCoroutines.Start(SortBongoItems());
                 return true;
@@ -111,8 +111,6 @@ namespace BongoLoader.Patches
 
             if (!modsSeparator.activeSelf)
                 modsSeparator.SetActive(true);
-
-            ModLoader.Logger.Msg("sorted");
         }
 
         private static IEnumerator SortAllItems(CatInventory __instance)
